@@ -28,36 +28,35 @@ On app launch, you are prompted to log in. This login flow utilizes the [OAuth 2
 
 Scan the QR code which will take you to the pre-filled login initialization page, or simply browse to the URL manually and follow the instructions on screen.
 
-![Screenshot 2024-02-23 12-47-18](https://github.com/nzpei/roku-sfdc/assets/3498834/db8162b9-ff06-43ea-9b3a-b49785adaccf)
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/7bb5238e-9ea8-4798-b040-010b42ebec9a)
 
 To connect with Sandbox environments or to specify a custom My Domain, press the `Options (*)` button on your remote and select "Sandbox" or "My Domain" respectively.
 
-![image](https://github.com/nzpei/roku-sfdc/assets/3498834/54bbf73e-fabc-45a4-ac8a-5b446abbe171)
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/fb4454ba-bd5c-494e-9e6b-d0751936739d)
 
 For My Domain domains, only enter the portion before ".my.salesforce.com", for example, if your domain is "acme.my.salesforce.com" only enter in "acme".
-![image](https://github.com/nzpei/roku-sfdc/assets/3498834/c0bac3e4-ff24-46db-9c11-16e2dde43fad)
 
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/2527179b-7708-4f9b-8f90-551679069644)
 
 ### Dashboard List
 
 Browse and select the dashboard you wish to show. Note this screen fetches all "Recently Viewed" LEX and CRMA dashboards on load, so may take a while if you have a lot of assets in your org. Use the checkboxes on the left to hide and show LEX or CRMA dashboards respectively.
 
-![image](https://github.com/nzpei/roku-sfdc/assets/3498834/46ee4924-db51-467c-a91f-df623fd5e4b8)
-
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/d3e99e30-94b4-406b-8510-b05c3766b76b)
 
 ### Dashboard View
 
 By default, a dashboard opens in full-screen mode, zoomed to fill the screen.
-![Screenshot 2024-02-23 13-04-47](https://github.com/nzpei/roku-sfdc/assets/3498834/b20b7c81-d27d-44f3-bf64-8d17cbea6aa3)
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/6e97df9a-f69f-408d-8e4b-b53a2f91aec6)
 
 In an ideal world, you should adapt and design your dashboard accordingly to optimize it for the screen size and resolution of your TV. A bit of trial and error may be required to get the size just right.
 
-![image](https://github.com/nzpei/roku-sfdc/assets/3498834/9044b9de-4bb0-47d3-a437-0e3cf0a4a944)
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/5911f302-1110-4f1c-8148-76e5c82b228a)
 
 To focus on a particular part of the dashboard, if you wish to scroll up or down, use the arrow keys on the remote. The scrolled position is remembered even if the dashboard refreshes.
 
 Alternatively, you can press the `OK` button to toggle between a zoomed-out view (whole dashboard displays on the screen with black bars on the side), and the default view.
-![Screenshot 2024-02-23 13-06-33](https://github.com/nzpei/roku-sfdc/assets/3498834/b87f3656-925a-43b4-82d1-8b10eb0b2a9c)
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/4facfefc-c560-48d8-b80c-5fe907a601e2)
 
 To navigate back to the dashboard selection screen, press the `Back` button.
 
@@ -65,7 +64,7 @@ To navigate back to the dashboard selection screen, press the `Back` button.
 
 To periodically reload the dashboard, press the `*` button to toggle the options menu. Choose your desired refresh frequency with the `OK` button and then `Back` to exit.
 
-![Screenshot 2024-02-23 13-08-08](https://github.com/nzpei/roku-sfdc/assets/3498834/f613d80a-6c6c-4c81-9886-566f2d053dc9)
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/f04c4789-bfaf-416a-a10c-f694906a7f3f)
 
 The dashboard will automatically refresh based upon the refresh time specified. For LEX dashboards, an API call is made to explicitly "refresh" the dashboard prior downloading and displaying the screenshot. This may take a while if the dashboard itself is slow to refresh.
 
@@ -75,7 +74,7 @@ By default the app will remember your login even after closing/reopening the app
 
 To log out, press the `Back` button from the dashboard selection screen.
 
-![Screenshot 2024-02-23 13-10-36](https://github.com/nzpei/roku-sfdc/assets/3498834/b91eaa5a-c6aa-403b-86d5-ce6f617a83f5)
+![image](https://github.com/nzpei/roku-sfdc-poc/assets/3498834/563d9959-4ef9-45af-88bd-cdc799615c92)
 
 ## Limitations
 
