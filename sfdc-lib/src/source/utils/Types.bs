@@ -1,0 +1,5 @@
+' This file will be populated with the functions using type-gen-plugin.ts
+
+function FuncName(func as function) as string
+    return (LCase(`${func}`)).replace("function:", "").trim()
+end function

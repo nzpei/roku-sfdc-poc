@@ -1,0 +1,42 @@
+
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+import "pkg:/source/utils/RegistryUtils.bs"
+
+@asynctask
+function PollForTokenSalesforceAuthTask(input as object) as object
+
+    sfdcService = new Salesforce.SalesforceService()
+    response = sfdcService.PollForAuthToken(input.content.deviceCode, input.content.sfdc_env)
+
+    metadata = response.Json()
+
+    'Still pending authorization. Retrigger the timer again.
+    if response.statuscode() = 400 and parsejson(response.event.getstring()).error = "authorization_pending"
+        input.content.pollIncrement = input.content.pollIncrement + 1
+
+        return {
+            success: false
+            error: response.ErrorMessage()
+        }
+    end if
+
+    if not response.IsSuccess() or metadata = invalid
+        return {
+            success: false
+            error: response.ErrorMessage()
+        }
+    end if
+
+    ' Persist the auth token for later use
+    RegistryUtils.Write(RegistryUtils.SFDC_ACCESS_TOKEN, metadata.access_token)
+    RegistryUtils.Write(RegistryUtils.SFDC_REFRESH_TOKEN, metadata.refresh_token)
+    RegistryUtils.Write(RegistryUtils.SFDC_INSTANCE_URL, metadata.instance_url)
+
+    ' Pass the auth token upstream
+    input.content.authToken = FormatJson(metadata)
+
+
+    return {
+        success: true
+    }
+end function

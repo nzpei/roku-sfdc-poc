@@ -1,0 +1,90 @@
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+function Init()
+    m.top.functionName = "LoggerLoop"
+
+    port = CreateObject("roMessagePort")
+
+    m.top.ObserveField("logLine", port)
+
+    scene = m.top.getScene()
+    if scene.hasField("systemLogEvent")
+        scene.ObserveFieldScoped("systemLogEvent", port)
+    end if
+
+    m.port = port
+
+    #if DEBUG
+        StartLogger(m.top, LogLevel.Debug)
+    #else
+        StartLogger(m.top, LogLevel.Info)
+    #end if
+end function
+
+function StartLogger(logger as object, logLevel = LogLevel.Info as LogLevel) as void
+    if m.global.logger <> invalid
+        return
+    end if
+
+    logger.logLevel = logLevel
+    m.global.addFields({ logger: logger })
+    logger.control = "run"
+end function
+
+function LoggerLoop()
+    port = m.port
+
+    buffer = CreateObject("roByteArray")
+    logsFile = m.top.folder + "/" + m.top.filename
+    previousLogsFile = m.top.folder + "/" + m.top.filenamePrevious
+    filenameStartup = m.top.filenameStartup
+
+    CreateDirectory(m.top.folder)
+    DeleteFile(previousLogsFile)
+    MoveFile(logsFile, previousLogsFile)
+
+    startUpLogs = ReadAsciiFile(filenameStartup)
+    if not StringUtils.IsNullOrEmpty(startUpLogs)
+        line = `************* Startup Logs *************\n${startUpLogs}*********** End Startup Logs ***********\n`
+        ' bs:disable-next-line LINT3012
+        print line
+        buffer.FromAsciiString(line)
+        buffer.AppendFile(logsFile)
+    end if
+
+    while true
+        msg = wait(0, port)
+        msgType = type(msg)
+        if msgType = "roSGNodeEvent"
+            field = msg.getField()
+            if field = "logLine"
+                OnLineLog(msg, logsFile, buffer)
+            else if field = "systemLogEvent"
+                OnLineSysLog(msg, logsFile, buffer)
+            end if
+        end if
+    end while
+end function
+
+function OnLineLog(event as object, logsFile as string, buffer as object)
+    line = event.getData()
+    ' bs:disable-next-line LINT3012
+    print line
+
+    buffer.FromAsciiString(line + `\n`)
+    buffer.AppendFile(logsFile)
+end function
+
+function OnLineSysLog(event as object, logsFile as string, buffer as object) as void
+    info = event.getData()
+    if info.LogType <> "http.error"
+        return
+    end if
+    line = "[ERROR][SysLog] " + ToString(info)
+    ' bs:disable-next-line LINT3012
+    print line
+
+    buffer.FromAsciiString(line + `\n`)
+    buffer.AppendFile(logsFile)
+end function

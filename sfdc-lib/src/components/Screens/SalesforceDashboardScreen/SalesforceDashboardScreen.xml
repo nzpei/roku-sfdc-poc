@@ -1,0 +1,45 @@
+<component name="SalesforceDashboardScreen" extends="Group" includes="AutoBind,Focus">
+    <interface>
+        <field id="appController" type="node" bind="/AppController" />
+    </interface>
+    <children>
+        <Button id="dummyButton" />
+        <Rectangle
+            width="1920"
+            height="1080"
+            color="0x242424">
+        </Rectangle>
+
+        <Poster
+            id="SalesforceDashboard"
+            height="0.0"
+            width="0.0"
+            loadHeight="1080"
+            loadWidth="1920"
+            translation="[0, 0]"
+            loadDisplayMode="scaleToZoom"
+        />
+        <Poster
+            id="SalesforceLogo"
+            height="280"
+            width="400"
+            loadHeight="280"
+            loadWidth="400"
+            uri="pkg:/images/salesforcelogo.png"
+            translation="[760, 310]" />
+
+        <Label
+            id="MessageLabel"
+            height="50"
+            width="1920"
+            font="font:MediumBoldSystemFont"
+            horizAlign="center"
+            translation="[0,800]"
+            text="Loading dashboard..."
+        />
+        <Timer
+            id="RefreshTimer"
+            duration="0" repeat="true" />
+    </children>
+
+</component>

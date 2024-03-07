@@ -1,0 +1,11 @@
+<component name="SalesforceArtifactContentNode" extends="ContentNode">
+    <interface>
+        <field id="type" type="string" value="dashboard" />
+        <field id="loadState" type="string" />
+        <field id="folder" type="string" />
+        <field id="description" type="string" />
+        <field id="author" type="string" />
+        <field id="lastModifiedDate" type="string" />
+        <field id="sfid" type="string" />
+    </interface>
+</component>

@@ -1,0 +1,34 @@
+namespace Registry
+
+    function ReadKey(key as string, section as string) as dynamic
+        sec = CreateObject("roRegistrySection", section)
+        if not sec.Exists(key)
+            return invalid
+        end if
+        return sec.Read(key)
+    end function
+
+    function DeleteKey(key as string, section as string)
+        sec = CreateObject("roRegistrySection", section)
+        sec.Delete(key)
+        sec.Flush()
+    end function
+
+    function GetSfdcLibUrlsFromRegistry() as object
+        urlsJson = ReadKey("sfdc_lib_urls", "Sfdc")
+        if urlsJson = invalid
+            return invalid
+        end if
+        urls = ParseJson(urlsJson)
+        return urls
+    end function
+
+    function ClearSfdcLibUrlsIfNeeded(launchArgs as object) as void
+        if launchArgs = invalid or launchArgs.clearSfdcLibUrls = invalid
+            return
+        end if
+        DeleteKey("sfdc_lib_urls", "Sfdc")
+        Logger.Log("Cleared key sfdc_lib_urls from registry")
+    end function
+
+end namespace

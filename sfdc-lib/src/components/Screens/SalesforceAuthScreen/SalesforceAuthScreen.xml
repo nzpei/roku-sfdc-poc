@@ -1,0 +1,75 @@
+<component name="SalesforceAuthScreen" extends="Group" includes="AutoBind">
+    <interface>
+        <field id="url" type="string" />
+        <field id="userCode" type="string" onChange="OnUrlSet" />
+        <field id="deviceCode" type="string" />
+        <field id="authToken" type="string" onChange="OnAuthTokenSet" />
+        <field id="sfdc_env" type="string" />
+        <field id="pollInterval" type="string" onChange="OnPollIntervalSet" />
+        <field id="pollIncrement" type="integer" onChange="OnPollIncrementSet" />
+        <field id="qrCodeUrl" type="string" onChange="OnUrlSet" />
+        <field id="appController" type="node" bind="/AppController" />
+    </interface>
+    <children>
+        <Rectangle
+            width="1920"
+            height="1080"
+            color="0x242424">
+        </Rectangle>
+
+        <Label
+            height="60"
+            width="1920"
+            font="font:MediumBoldSystemFont"
+            horizAlign="center"
+            translation="[0,92]"
+            text="Scan the QR code with your phone camera, or open the URL in a web browser to log in:"
+        />
+        <Poster
+            id="SalesforceLogo"
+            height="280"
+            width="400"
+            loadHeight="280"
+            loadWidth="400"
+            uri="pkg:/images/salesforcelogo.png"
+            translation="[360, 310]" />
+        <Poster
+            id="QrCodePoster"
+            height="400"
+            width="400"
+            loadHeight="400"
+            loadWidth="400"
+            translation="[1060, 260]" />
+
+        <Label
+            id="UrlLabel"
+            height="50"
+            width="1920"
+            font="font:MediumBoldSystemFont"
+            horizAlign="center"
+            translation="[0,800]"
+        />
+        <Label
+            id="UserCodeLabel"
+            height="50"
+            width="1920"
+            font="font:MediumBoldSystemFont"
+            horizAlign="center"
+            translation="[0,850]"
+        />
+
+        <Label
+            id="OptionsInstructionsLabel"
+            height="50"
+            width="1920"
+            font="font:SmallSystemFont"
+            horizAlign="center"
+            text="Press * for more options"
+            translation="[0,950]"
+        />
+
+        <Timer
+            id="LoginTimer"
+            duration="5" />
+    </children>
+</component>

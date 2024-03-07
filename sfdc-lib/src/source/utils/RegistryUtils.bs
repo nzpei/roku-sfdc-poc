@@ -1,0 +1,62 @@
+namespace RegistryUtils
+
+    const DEFAULT_SECTION = "Sfdc"
+    const SFDC_LIB_URLS = "sfdc_lib_urls"
+    const SFDC_ACCESS_TOKEN = "sfdc_access_token"
+    const SFDC_REFRESH_TOKEN = "sfdc_refresh_token"
+    const SFDC_INSTANCE_URL = "sfdc_instance_url"
+    const SFDC_DASHBOARD_ID = "sfdc_dashboard_id"
+    const SFDC_DASHBOARD_REFRESH_FREQUENCY = "sfdc_dashboard_refresh_freq"
+
+    function Read(key as string, sectionName = DEFAULT_SECTION as string) as dynamic
+        section = CreateObject("roRegistrySection", sectionName)
+        if section.Exists(key)
+            return section.Read(key)
+        end if
+        return invalid
+    end function
+
+    function Write(key as string, value as string, sectionName = DEFAULT_SECTION as string)
+        section = CreateObject("roRegistrySection", sectionName)
+        section.Write(key, value)
+        section.Flush()
+    end function
+
+    function Delete(key as string, sectionName = DEFAULT_SECTION as string)
+        section = CreateObject("roRegistrySection", sectionName)
+        section.Delete(key)
+        section.Flush()
+    end function
+
+    function ReadAll() as object
+        result = {}
+        registry = CreateObject("roRegistry")
+        sectionNames = registry.GetSectionList()
+        for each sectionName in sectionNames
+            section = CreateObject("roRegistrySection", sectionName)
+            keys = section.GetKeyList()
+            values = section.ReadMulti(keys)
+            result[sectionName] = values
+        end for
+        return result
+    end function
+
+    function WriteAll(values as object) as void
+        DeleteAll()
+        for each sectionName in values
+            section = CreateObject("roRegistrySection", sectionName)
+            section.WriteMulti(values[sectionName])
+            section.Flush()
+        end for
+    end function
+
+    function DeleteAll() as void
+        registry = CreateObject("roRegistry")
+        sectionNames = registry.GetSectionList()
+        for each sectionName in sectionNames
+            registry.Delete(sectionName)
+        end for
+        registry.Flush()
+    end function
+
+end namespace

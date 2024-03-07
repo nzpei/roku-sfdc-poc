@@ -1,0 +1,45 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="DashboardRefreshOptionsOverlay" extends="Group"
+    initialFocus="refreshRadioButtonList" includes="AutoBind">
+    <interface>
+        <field id="dashboardTimer" type="node" />
+        <field id="appController" type="node" bind="/AppController" />
+    </interface>
+
+    <children>
+        <Rectangle
+            id="background"
+            width="1920"
+            height="1080"
+            color="#000000"
+            opacity="0" />
+        <Rectangle
+            id="container"
+            width="600"
+            height="1080"
+            translation="[0,0]"
+            color="0x242424">
+            <Label
+                id="titleLabel"
+                width="500"
+                maxLines="2"
+                wrap="true"
+                translation="[50,50]"
+                text="Auto-Refresh Frequency">
+                <Font role="font" uri="font:BoldSystemFontFile" size="36" />
+            </Label>
+            <RadioButtonList id="refreshRadioButtonList" translation="[50,120]" checkedItem="0">
+                <ContentNode role="content">
+                    <ContentNode title="Never" />
+                    <ContentNode title="15 minutes" />
+                    <ContentNode title="30 minutes" />
+                    <ContentNode title="1 hour" />
+                    <ContentNode title="8 hours" />
+                    <ContentNode title="12 hours" />
+                    <ContentNode title="24 hours" />
+                </ContentNode>
+            </RadioButtonList>
+        </Rectangle>
+    </children>
+
+</component>

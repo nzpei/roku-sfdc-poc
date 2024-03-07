@@ -1,0 +1,17 @@
+import "pkg:/source/utils/RegistryUtils.bs"
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/services/HttpClient.bs"
+
+@asynctask
+function LogOutTask(input as object) as object
+
+    sfdcService = new Salesforce.SalesforceService()
+
+    sfdcService.LogOut()
+
+    return {
+        success: true
+    }
+
+end function

@@ -1,0 +1,13 @@
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+
+@asynctask
+function GetDashboardListTask(input as object) as object
+
+    sfdcService = new Salesforce.SalesforceService()
+
+    if input.includeOptions <> invalid
+        return sfdcService.GetDashboardList(input.includeOptions[0], input.includeOptions[1])
+    end if
+
+    return invalid
+end function

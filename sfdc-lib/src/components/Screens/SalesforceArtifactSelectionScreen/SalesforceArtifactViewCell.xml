@@ -1,0 +1,35 @@
+<component name="SalesforceArtifactViewCell" extends="Group">
+    <interface>
+        <field id="itemContent" type="node" onChange="OnContentSet" />
+        <field id="title" type="string" alias="titleLabel.text" />
+        <field id="folder" type="string" alias="folderLabel.text" />
+        <field id="icon" type="string" alias="thumbnailPoster.uri" />
+    </interface>
+    <children>
+        <Poster
+            id="thumbnailPoster"
+            loadDisplayMode="scaleToZoom"
+            width="120"
+            height="120"
+            uri="pkg:/images/dashboard_ea_120.png"
+            failedBitmapUri="pkg:/images/thumbnail-missing.jpg">
+        </Poster>
+
+        <LayoutGroup
+            itemSpacings="[5,5]"
+            translation="[120,28]">
+            <Label
+                id="titleLabel"
+                width="350"
+                font="font:SmallestBoldSystemFont"
+                maxLines="1"
+                wrap="false" />
+            <Label
+                id="folderLabel"
+                width="350"
+                height="25"
+                font="font:SmallestSystemFont" />
+        </LayoutGroup>
+    </children>
+
+</component>

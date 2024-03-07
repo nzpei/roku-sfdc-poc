@@ -1,0 +1,30 @@
+<component name="LoadingIndicator" extends="Group">
+    <interface>
+        <field id="message" type="string" alias="messageLabel.text" />
+    </interface>
+    <children>
+        <Rectangle
+            width="1920"
+            height="1080"
+            color="0x242424">
+        </Rectangle>
+        <Poster
+            id="SalesforceLogo"
+            height="280"
+            width="400"
+            loadHeight="280"
+            loadWidth="400"
+            uri="pkg:/images/salesforcelogo.png"
+            translation="[760, 310]" />
+
+        <Label
+            id="MessageLabel"
+            height="50"
+            width="1920"
+            font="font:MediumBoldSystemFont"
+            horizAlign="center"
+            translation="[0,800]"
+            text="Updating..."
+        />
+    </children>
+</component>

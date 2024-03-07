@@ -1,0 +1,85 @@
+import "pkg:/source/utils/RegistryUtils.bs"
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/services/HttpClient.bs"
+
+@asynctask
+function RetrieveDashboardImageTask(input as object) as object
+
+    sfdcService = new Salesforce.SalesforceService()
+
+    if sfdcService.IsLoggedIn()
+        ' Explicitly revoke and refresh the access_token to work around a Salesforce bug.
+        ' For some reason, an ACCESS_TOKEN that has previously been used -
+        ' even if it's still active - will cause Pupparazzi to fail if toggling between
+        ' LEX and CRMA dashboards. This is a dumb workaround, but works.
+        sfdcService.RevokeAccessToken()
+        sfdcService.RefreshToken()
+
+        access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+        newXfer = CreateObject("roURLTransfer")
+        port = CreateObject("roMessagePort")
+        newXfer.SetPort(port)
+        newXfer.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        newXfer.EnableCookies()
+        ' newXfer.AddHeader("Authorization", "Bearer " + access_token)
+        ' Not formally documented, but Auth header doesn't seem to be needed. Cookie used instead.
+        expires = CreateObject("roDateTime")
+        expires.FromSeconds(expires.asSeconds() + 3600)
+        newXfer.AddCookies([{ version: 1, name: "sid", value: access_token, domain: "salesforce.com", path: "/", expires: expires }])
+
+        dbSfid = RegistryUtils.Read(RegistryUtils.SFDC_DASHBOARD_ID)
+        instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+        download_url = ""
+
+        if dbSfid.StartsWith("01Z") ' LEX dashboard IDs start with 01Z, CRMA starts with 0FK
+            download_url = `${instance_url}/analytics/download/lightning-dashboard/${dbSfid}.png`
+
+            ' LEX dashboards need to be refreshed manually to ensure the latest data
+            ' The refresh may fail - e.g. if you're refreshing too frequently (max 1x per minute per db)
+            refreshResult = sfdcService.RefreshLEXDashboard(dbSfid)
+
+            if refreshResult = false
+                ' TODO: Display some kind of toast message that the refresh failed
+            end if
+        else
+            download_url = `${instance_url}/analytics/download/dashboard/${dbSfid}.png`
+        end if
+        newXfer.SetUrl(download_url)
+
+        ' Overwriting files doesn't seem to work with GetToFile. Workaround - just delete it first.
+        ' Since we don't necessarily know the previous filename, we just delete the temp subfolder.
+        fs = CreateObject("roFileSystem")
+        fs.Delete("tmp:/sfdbs/")
+        fs.CreateDirectory("tmp:/sfdbs/")
+
+        ' Download the file. Note this can take a long time (30+ seconds)
+        dt = CreateObject("roDateTime")
+        hashvalue = dt.AsSeconds() ' Workaround to force Poster to reload URL each time by making it "different"
+        fileLoc = `tmp:/sfdbs/dashboard-image-${dbSfid}-${hashvalue}.png`
+
+        LogInfo("Downloading PNG from", download_url, "to local storage", fileLoc)
+
+        response = newXfer.GetToFile(fileLoc)
+
+        if response = 200
+            return {
+                success: true
+                fileLoc: fileLoc
+            }
+        else
+            LogError("Error downloading image. Error: " + response.toStr())
+            return {
+                success: false
+                errorCode: response
+            }
+        end if
+    end if
+
+    return {
+        success: false
+        errorCode: "User not logged in or token expired"
+    }
+end function
+
+

@@ -1,0 +1,18 @@
+<component name="MainScene" extends="Group" includes="AutoBind">
+    <children>
+        <!-- Logger should remain the first child, to make sure it is initialized first in the scene -->
+        <Logger id="Logger" />
+        <AppController id="AppController"
+            root="bind:./AppRoot"
+            stack="bind:./Stack"
+        >
+            <Group id="Stack">
+                <AppRoot id="AppRoot">
+                    <SalesforceLoadingScreen
+                        id="sfLoadingScrn" />
+                </AppRoot>
+            </Group>
+            <ApplicationInfo id="ApplicationInfo" />
+        </AppController>
+    </children>
+</component>

@@ -1,0 +1,35 @@
+
+import "pkg:/source/AsyncTask/AsyncTask.bs"
+import "pkg:/source/AsyncTask/Tasks.bs"
+import "pkg:/source/utils/StringUtils.bs"
+
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+
+function Init()
+end function
+
+function OnNodeReady()
+    m.contentTask = AsyncTask.Start(Tasks.CheckIfLoggedInTask, {
+        content: m.top
+    }, OnLoginCheckResult)
+
+end function
+
+function OnLoginCheckResult(result as object)
+    if result.success and result.result.success = true
+        dbSfid = RegistryUtils.Read(RegistryUtils.SFDC_DASHBOARD_ID)
+        if dbSfid <> invalid
+            sfDbScreen = CreateObject("roSGNode", "SalesforceDashboardScreen")
+            m.appController@.PushScreen(sfDbScreen)
+            sfDbScreen@.BindNode()
+        else
+            sfDbSelectScreen = CreateObject("roSGNode", "SalesforceArtifactSelectionScreen")
+            m.appController@.PushScreen(sfDbSelectScreen)
+            sfDbSelectScreen@.BindNode()
+        end if
+    else
+        sfAuthScreen = CreateObject("roSGNode", "SalesforceAuthScreen")
+        m.appController@.PushScreen(sfAuthScreen)
+        sfAuthScreen@.BindNode()
+    end if
+end function

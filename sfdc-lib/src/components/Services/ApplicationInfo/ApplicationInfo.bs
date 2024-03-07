@@ -1,0 +1,20 @@
+import "pkg:/source/AsyncTask/AsyncTask.bs"
+import "pkg:/source/AsyncTask/Tasks.bs"
+import "pkg:/source/services/ApplicationInfo.bs"
+
+function Init()
+    m.service = new ApplicationInfo(m.top)
+end function
+
+
+function GetDeviceInfo(_unused as dynamic) as object
+    return m.service.GetDeviceInfo()
+end function
+
+function GetUserCountryCode(_unused as dynamic) as string
+    return m.service.GetUserCountryCode()
+end function
+
+function GetLocalIpAddress(_unused as dynamic) as dynamic
+    return m.service.GetLocalIpAddress()
+end function

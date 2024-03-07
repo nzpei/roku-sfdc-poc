@@ -1,0 +1,93 @@
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/source/utils/Logging.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.screens = {}
+end function
+
+function OnNodeReady()
+    NodeSetFocus(m.top.root, true)
+end function
+
+function PushScreen(node as object)
+    m.stack.appendChild(node)
+    FocusTopScreen(invalid)
+end function
+
+function PopScreen(_unused as dynamic)
+    childCount = m.stack.getChildCount()
+    if childCount > 1
+        m.stack.removeChildIndex(childCount - 1)
+        FocusTopScreen(invalid)
+    end if
+end function
+
+function FocusTopScreen(_unused as dynamic)
+    childCount = m.stack.getChildCount()
+    topScreen = m.stack.getChild(childCount - 1)
+    NodeSetFocus(topScreen, true)
+end function
+
+function HideRootScreen(screenName as string) as void
+    if StringUtils.IsNullOrEmpty(screenName)
+        return
+    end if
+    if not m.screens.DoesExist(screenName)
+        return
+    end if
+    screen = m.screens[screenName]
+    if screen = invalid
+        return
+    end if
+    screen.visible = false
+end function
+
+function ShowRootScreen(screenName as string) as void
+    if StringUtils.IsNullOrEmpty(screenName)
+        return
+    end if
+    if not m.screens.DoesExist(screenName)
+        screen = CreateObject("roSGNode", screenName)
+        screen.id = screenName
+        m.screens[screenName] = screen
+        ' Add at position 1 which is in front of the main loading screen
+        m.root.insertChild(screen, 1)
+        if screen.hasField("binding_done")
+            screen@.BindNode()
+        end if
+    end if
+
+    screen = m.screens[screenName]
+    if screen = invalid
+        return
+    end if
+    screen.visible = true
+
+    NodeSetFocus(screen, true)
+end function
+
+function GetRootScreen(screenName as string) as object
+    if StringUtils.IsNullOrEmpty(screenName)
+        return invalid
+    end if
+    if not m.screens.DoesExist(screenName)
+        return invalid
+    end if
+    return m.screens[screenName]
+end function
+
+function onKeyEvent(key as string, press as boolean) as boolean
+
+
+    return false
+end function
+
+function OnExitDialog(event as object)
+    buttonIndex = event.GetData()
+    if buttonIndex = 0 ' Exit
+        LogInfo("Exiting app")
+        m.top.getScene().exitChannel = true
+    end if
+end function

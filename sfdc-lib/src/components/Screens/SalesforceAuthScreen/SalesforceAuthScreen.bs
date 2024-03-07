@@ -1,0 +1,144 @@
+import "pkg:/source/AsyncTask/AsyncTask.bs"
+import "pkg:/source/AsyncTask/Tasks.bs"
+import "pkg:/source/utils/StringUtils.bs"
+import "pkg:/components/Dialog/DialogUtils.bs"
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+
+function Init()
+
+end function
+
+function OnNodeReady()
+    m.top.sfdc_env = "PRODUCTION"
+
+    m.contentTask = AsyncTask.Start(Tasks.InitSalesforceAuthTask, {
+        content: m.top
+    }, OnAuthTaskResult)
+
+end function
+
+function CheckAuth()
+    m.contentTask = AsyncTask.Start(Tasks.PollForTokenSalesforceAuthTask, {
+        content: m.top
+    }, OnAuthTaskResult)
+
+end function
+
+function OnPollIntervalSet()
+    ' Timer loop to check for auth
+    m.loginTimer = m.top.findNode("LoginTimer")
+    m.loginTimer.ObserveField("fire", FuncName(CheckAuth))
+
+    m.pollIncrement = 0
+    m.loginTimer.duration = m.top.pollInterval
+    m.loginTimer.control = "start"
+end function
+
+function OnPollIncrementSet()
+    ' Timer loop to check for auth
+    m.loginTimer = m.top.findNode("LoginTimer")
+
+    m.loginTimer.duration = m.top.pollInterval
+    m.loginTimer.control = "start"
+end function
+
+function OnAuthTokenSet()
+    urlLabel = m.top.findNode("urlLabel")
+    urlLabel.text = m.top.authToken
+
+    'Hide the user code label as it no longer needed
+    userCodeLabel = m.top.findNode("userCodeLabel")
+    userCodeLabel.visible = false
+
+    m.appController@.PopScreen()
+    sfDbSelectScreen = CreateObject("roSGNode", "SalesforceArtifactSelectionScreen")
+    m.appController@.PushScreen(sfDbSelectScreen)
+    sfDbSelectScreen@.BindNode()
+
+end function
+
+function OnUrlSet()
+    url = m.top.url
+    urlLabel = m.top.findNode("urlLabel")
+    urlLabel.text = url
+
+    userCodeLabel = m.top.findNode("userCodeLabel")
+    userCodeLabel.text = "Enter code: " + m.top.userCode
+
+    qrCodeUrl = url + "?user_code=" + m.top.userCode
+
+    qrCodePoster = m.top.findNode("QrCodePoster")
+    AsyncTask.Start(Tasks.GenerateQrCodeTask, {
+        poster: qrCodePoster
+        text: qrCodeUrl
+        size: qrCodePoster.loadWidth
+        padding: 20
+    })
+end function
+
+function OnAuthTaskResult(output as object) as void
+
+    if output.cancelled
+        return
+    end if
+
+    if not output.success or not output.result.success
+        ' output.error for unhandled exception
+        error = output.error
+        if error = invalid
+            ' output.result.error for network errors
+            error = output.result.error
+        end if
+        error = ErrorUtils.Format(error)
+        LogError(error)
+        return
+    end if
+
+end function
+
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press = false
+        return false
+    end if
+
+    if key = "options"
+        dialog = DialogUtils.ShowDialogButtons("Select Environment", "Production", ["Production", "Sandbox", "My Domain"])
+        dialog.observeField("buttonSelected", FuncName(OnEnvironmentDialog), ["buttonSelected"])
+        return true
+    end if
+
+    return false
+end function
+
+function OnEnvironmentDialog(event as object)
+    buttonIndex = event.GetData()
+    if buttonIndex = 0 ' Production
+        m.top.sfdc_env = "PRODUCTION"
+    else if buttonIndex = 1 'Sandbox
+        m.top.sfdc_env = "SANDBOX"
+    else if buttonIndex = 2 'My Domain
+        dialog = DialogUtils.ShowKeyboardDialog("Enter your org's domain, e.g. for acme.my.salesforce.com simply enter 'acme'", "My Domain", ["OK"], "")
+        dialog.observeField("buttonSelected", FuncName(OnMyDomainSelected))
+    end if
+
+    m.contentTask = AsyncTask.Start(Tasks.InitSalesforceAuthTask, {
+        content: m.top
+    }, OnAuthTaskResult)
+
+end function
+
+function OnMyDomainSelected(event as object)
+
+    nd = event.getRoSGNode()
+
+    if nd <> invalid and nd.text <> invalid and nd.text <> ""
+        m.top.sfdc_env = nd.text
+
+        m.contentTask = AsyncTask.Start(Tasks.InitSalesforceAuthTask, {
+            content: m.top
+        }, OnAuthTaskResult)
+
+    end if
+end function
+

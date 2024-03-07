@@ -1,0 +1,4 @@
+<component name="SimpleKeyboardDialog" extends="StandardKeyboardDialog">
+    <children>
+    </children>
+</component>

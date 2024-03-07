@@ -1,0 +1,39 @@
+namespace DialogUtils
+    function ShowDialog(message as dynamic, title as string, large = false as boolean) as object
+        return ShowDialogButtons(message, title, ["Ok"], large)
+    end function
+
+    function ShowDialogButtons(message as dynamic, title as string, buttons as object, large = false as boolean) as object
+        dialog = CreateObject("roSGNode", "SimpleDialog")
+        if GetInterface(message, "ifArray") = invalid
+            message = message.Tokenize(`\n`).ToArray()
+        end if
+        dialog.message = message
+        dialog.title = title
+        dialog.buttons = buttons
+        if large
+            if m._deviceDisplayWidth = invalid
+                deviceInfo = CreateObject("roDeviceInfo")
+                displaySize = deviceInfo.GetDisplaySize()
+                m._deviceDisplayWidth = displaySize.w
+            end if
+            dialog.width = m._deviceDisplayWidth - 100
+        end if
+        m.top.getScene().dialog = dialog
+        return dialog
+    end function
+
+    function ShowKeyboardDialog(message as dynamic, title as string, buttons as object, textHint as string) as object
+        dialog = CreateObject("roSGNode", "SimpleKeyboardDialog")
+        if GetInterface(message, "ifArray") = invalid
+            message = message.Tokenize(`\n`).ToArray()
+        end if
+        dialog.message = message
+        dialog.title = title
+        dialog.buttons = buttons
+        dialog.textEditBox.hintText = textHint
+
+        m.top.getScene().dialog = dialog
+        return dialog
+    end function
+end namespace

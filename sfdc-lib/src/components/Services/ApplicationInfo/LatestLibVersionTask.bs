@@ -1,0 +1,25 @@
+import "pkg:/source/services/HttpClient.bs"
+
+@asynctask
+function LatestLibVersionTask() as object
+    latest = GetLatestSfdcLibVersionFromGithubReleases()
+    return {
+        latest: latest
+    }
+end function
+
+function GetLatestSfdcLibVersionFromGithubReleases() as string
+    'response = HttpClient.Head("https://github.com/UPDATE-THIS-TO-WHAT-IT-NEEDS-To-BE/Sfdc/releases/latest").Await()
+
+    ' if response.StatusCode() = 200
+    '     headers = response.Headers()
+    '     if headers.location <> invalid
+    '         regex = /\/v?(\d+\.\d+\.\d+)/
+    '         match = regex.match(headers.location)
+    '         if match.Count() = 2
+    '             return match[1]
+    '         end if
+    '     end if
+    ' end if
+    return "N/A"
+end function

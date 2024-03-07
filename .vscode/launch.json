@@ -1,0 +1,30 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "SFDC on Roku (dev)",
+      "type": "brightscript",
+      "request": "launch",
+      "envFile": "${workspaceFolder}/.env",
+      "host": "${env:ROKU_DEV_TARGET}",
+      "password": "${env:ROKU_DEVPASSWORD}",
+      "stopOnEntry": false,
+      "enableDebuggerAutoRecovery": false,
+      "stopDebuggerOnAppExit": false,
+      "rootDir": "${workspaceFolder}/build/sfdc-app",
+      "sourceDirs": ["${workspaceFolder}/sfdc-app/src"],
+      "files": ["**"],
+      "componentLibrariesPort": 8086,
+      "componentLibraries": [
+        {
+          "rootDir": "${workspaceFolder}/build/sfdc-lib",
+          "sourceDirs": ["${workspaceFolder}/sfdc-lib/src"],
+          "outFile": "sfdc-lib.zip",
+          "files": ["**"]
+        }
+      ],
+      "preLaunchTask": "build-dev",
+      "injectRdbOnDeviceComponent": true
+    }
+  ]
+}

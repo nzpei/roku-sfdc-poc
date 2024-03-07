@@ -1,0 +1,381 @@
+import "pkg:/source/services/HttpClient.bs"
+import "pkg:/source/utils/RegistryUtils.bs"
+import "pkg:/source/utils/Logging.bs"
+namespace Salesforce
+
+    const PRODUCTION_URL = "https://login.salesforce.com"
+    const SANDBOX_URL = "https://test.salesforce.com"
+    const DEVICE_TOKEN_AUTH_ENDPOINT = "/services/oauth2/token"
+    const REFRESH_TOKEN_AUTH_ENDPOINT = "/services/oauth2/token"
+    const REVOKE_TOKEN_AUTH_ENDPOINT = "/services/oauth2/revoke"
+    const OAUTH_CLIENT_ID = "3MVG9OGq41FnYVsF.GHvQz.hViE9sSKAHKkd.ZVr5uNKUPa0AcxcCRC.bDAh500r8VE3ZJ5Rk29sHRG9KYnta"
+    const OAUTH_DEVICEFLOW_RESPONSE_TYPE = "device_code"
+    const OAUTH_DEVICEFLOW_GRANT_TYPE = "device"
+    const OAUTH_REFRESHFLOW_GRANT_TYPE = "refresh_token"
+    const USERINFO_ENDPOINT = "/services/oauth2/userinfo"
+    const WAVE_DASHBOARD_ENDPOINT = "/services/data/v58.0/wave/dashboards"
+    const LEX_DASHBOARD_ENDPOINT = "/services/data/v58.0/analytics/dashboards"
+    const LEX_DASHBOARD_REFRESH_ENDPOINT = "/services/data/v58.0/analytics/dashboards/"
+
+    class SalesforceService
+
+        function InitDeviceAuth(sfdc_env = "PRODUCTION" as string) as object
+            url = ""
+            if sfdc_env = "PRODUCTION"
+                url = `${PRODUCTION_URL}${DEVICE_TOKEN_AUTH_ENDPOINT}`
+            else if sfdc_env = "SANDBOX"
+                url = `${SANDBOX_URL}${DEVICE_TOKEN_AUTH_ENDPOINT}`
+            else
+                url = `https://${sfdc_env}.my.salesforce.com${DEVICE_TOKEN_AUTH_ENDPOINT}`
+            end if
+
+            body = `response_type=${OAUTH_DEVICEFLOW_RESPONSE_TYPE}&client_id=${OAUTH_CLIENT_ID}`
+
+            request = HttpClient.Post(url, body)
+            request.Header("Content-Type", "application/x-www-form-urlencoded")
+
+            return request.Await()
+        end function
+
+        function PollForAuthToken(deviceToken as string, sfdc_env = "PRODUCTION" as string) as object
+            url = ""
+            if sfdc_env = "PRODUCTION"
+                url = `${PRODUCTION_URL}${DEVICE_TOKEN_AUTH_ENDPOINT}`
+            else if sfdc_env = "SANDBOX"
+                url = `${SANDBOX_URL}${DEVICE_TOKEN_AUTH_ENDPOINT}`
+            else
+                url = `https://${sfdc_env}.my.salesforce.com${DEVICE_TOKEN_AUTH_ENDPOINT}`
+            end if
+
+            body = `grant_type=${OAUTH_DEVICEFLOW_GRANT_TYPE}&client_id=${OAUTH_CLIENT_ID}&code=${deviceToken}`
+
+            request = HttpClient.Post(url, body).TryCount(1)
+            request.Header("Content-Type", "application/x-www-form-urlencoded")
+
+            return request.Await()
+
+        end function
+
+        function IsLoggedIn() as boolean
+            access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+
+            if access_token <> invalid
+                instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+                ' Test if user is logged in
+                url = `${instance_url}${USERINFO_ENDPOINT}`
+                request = HttpClient.Get(url).TryCount(1)
+                request.Header("Authorization", "Bearer " + access_token)
+                request.Header("Content-Type", "application/json")
+
+                response = request.Await()
+
+                if response.statuscode() = 200
+                    return true
+
+                else
+                    ' Attempt to refresh the access_token
+                    refreshResult = m.RefreshToken()
+                    if refreshResult = true
+                        return true
+                    end if
+
+                    ' Refresh must have failed, clear out stored values to force re-login
+                    RegistryUtils.Delete(RegistryUtils.SFDC_ACCESS_TOKEN)
+                    RegistryUtils.Delete(RegistryUtils.SFDC_REFRESH_TOKEN)
+                    RegistryUtils.Delete(RegistryUtils.SFDC_INSTANCE_URL)
+                end if
+                return false
+            end if
+
+            return false
+        end function
+
+        function RevokeAccessToken() as boolean
+            instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+            access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+
+            url = `${instance_url}${REVOKE_TOKEN_AUTH_ENDPOINT}`
+            body = `token=${access_token}`
+            request = HttpClient.Post(url, body).TryCount(1)
+            request.Header("Content-Type", "application/x-www-form-urlencoded")
+            response = request.Await()
+
+            if response.statusCode() = 200
+                return true
+            else
+                return false
+            end if
+
+        end function
+
+        function RevokeRefreshToken() as boolean
+            instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+            refresh_token = RegistryUtils.Read(RegistryUtils.SFDC_REFRESH_TOKEN)
+
+            url = `${instance_url}${REVOKE_TOKEN_AUTH_ENDPOINT}`
+            body = `token=${refresh_token}`
+            request = HttpClient.Post(url, body).TryCount(1)
+            request.Header("Content-Type", "application/x-www-form-urlencoded")
+            response = request.Await()
+
+            if response.statusCode() = 200
+                return true
+            else
+                return false
+            end if
+
+        end function
+
+        function RefreshToken() as boolean
+            instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+            refresh_token = RegistryUtils.Read(RegistryUtils.SFDC_REFRESH_TOKEN)
+
+            if instance_url <> invalid and refresh_token <> invalid
+                url = `${instance_url}${REFRESH_TOKEN_AUTH_ENDPOINT}`
+
+                body = `grant_type=${OAUTH_REFRESHFLOW_GRANT_TYPE}&client_id=${OAUTH_CLIENT_ID}&refresh_token=${refresh_token}&format=json`
+                request = HttpClient.Post(url, body).TryCount(1)
+                request.Header("Content-Type", "application/x-www-form-urlencoded")
+
+                response = request.Await()
+
+                if response.statuscode() = 200
+                    metadata = response.Json()
+                    ' Persist the auth token for later use
+                    RegistryUtils.Write(RegistryUtils.SFDC_ACCESS_TOKEN, metadata.access_token)
+                    if metadata.refresh_token <> invalid
+                        ' Update refresh token only if it's passed back due to refresh token rotation
+                        ' TODO: Couldn't seem to get the refresh token flow to provide a new one,
+                        ' even with this option enabled on the connected app. Need to debug further
+                        RegistryUtils.Write(RegistryUtils.SFDC_REFRESH_TOKEN, metadata.refresh_token)
+                    end if
+                    ' Unlikely for the instance url to have changed, but update it just in case
+                    RegistryUtils.Write(RegistryUtils.SFDC_INSTANCE_URL, metadata.instance_url)
+                    return true
+                end if
+
+            end if
+            return false
+
+        end function
+
+        function GetDashboardList(includeLEX as boolean, includeCRMA as boolean) as object
+            rootChildren = []
+
+            access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+
+            if access_token <> invalid
+                instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+
+                if includeLEX
+                    ' Fetch Lightning DBs
+                    url = `${instance_url}${LEX_DASHBOARD_ENDPOINT}`
+                    request = HttpClient.Get(url).TryCount(1)
+                    request.Header("Authorization", "Bearer " + access_token)
+                    request.Header("Content-Type", "application/json")
+
+                    response = request.Await()
+
+                    if response.statuscode() = 403
+                        ' User doesn't have access for some reason
+                        throw "403: User does not have permissions to access Dashboards or API. " + response.ErrorMessage()
+                    end if
+
+                    if response.statuscode() = 401
+                        m.RefreshToken()
+                        access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+                        request.Header("Authorization", "Bearer " + access_token)
+                        response = request.Await()
+                    end if
+
+                    if response.statusCode() = 200
+                        result = response.json()
+
+                        m.CreateLEXDashboardNodesFromList(result, rootChildren)
+                    end if
+
+                end if
+
+                if includeCRMA
+                    ' Fetch Wave DBs
+                    url = `${instance_url}${WAVE_DASHBOARD_ENDPOINT}`
+                    request = HttpClient.Get(url).TryCount(1)
+                    request.Header("Authorization", "Bearer " + access_token)
+                    request.Header("Content-Type", "application/json")
+
+                    response = request.Await()
+
+                    if response.statuscode() = 403
+                        ' User doesn't have CRM Analytics / Wave permissions, or feature isn't available in the org.
+                        throw "403: User does not have permissions for CRM Analytics or the feature isn't enabled in the org. " + response.ErrorMessage()
+                    end if
+
+                    if response.statuscode() = 401
+                        m.RefreshToken()
+                        access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+                        request.Header("Authorization", "Bearer " + access_token)
+                        response = request.Await()
+                    end if
+
+                    if response.statusCode() = 200
+                        result = response.json()
+
+                        m.CreateCRMADashboardNodesFromList(result.dashboards, rootChildren)
+                    end if
+
+                end if
+
+            end if
+
+            ' Wrap in content node to pass back
+            contentNode = CreateObject("roSGNode", "ContentNode")
+            contentNode.Update({
+                children: rootChildren
+                nextPageUrl: m.nextPageUrl
+            }, true)
+
+            return contentNode
+
+        end function
+
+        function CreateCRMADashboardNodesFromList(dashboardList as object, rootChildren as object) as void
+            for each dashboard in dashboardList
+                node = CreateObject("roSGNode", "SalesforceArtifactContentNode")
+                node.loadState = "none"
+                node.type = "dashboard"
+                node.sfid = dashboard.id
+                node.title = dashboard.label
+                node.description = dashboard.description
+                node.folder = dashboard.folder.label
+                node.author = dashboard.createdBy.name
+                lastModDate = CreateObject("roDateTime")
+                lastModDate.FromISO8601String(dashboard.lastModifiedDate)
+                node.lastModifiedDate = lastModDate.asDateStringLoc("full")
+                rootChildren.Push(node)
+            end for
+        end function
+
+        function CreateLEXDashboardNodesFromList(dashboardList as object, rootChildren as object) as void
+            for each dashboard in dashboardList
+                dashboardMetadata = m.GetLEXDashboardDescribe(dashboard.describeUrl)
+
+                node = CreateObject("roSGNode", "SalesforceArtifactContentNode")
+                node.loadState = "none"
+                node.type = "lightning-dashboard"
+                node.sfid = dashboard.id
+                node.title = dashboard.name
+                node.description = dashboardMetadata.description
+                node.folder = dashboardMetadata.folderName
+                node.author = dashboardMetadata.runningUser.displayName
+                node.lastModifiedDate = invalid
+                rootChildren.Push(node)
+            end for
+
+        end function
+
+        function GetLEXDashboardDescribe(describeUrl as string) as object
+            access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+            instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+            url = `${instance_url}${describeUrl}`
+            request = HttpClient.Get(url).TryCount(1)
+            request.Header("Authorization", "Bearer " + access_token)
+            request.Header("Content-Type", "application/json")
+
+            response = request.Await()
+
+            if response.statuscode() = 403
+                ' User doesn't have access for some reason
+                throw "403: User does not have permissions to access Dashboards or API. " + response.ErrorMessage()
+            end if
+
+            if response.statuscode() = 401
+                m.RefreshToken()
+                access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+                request.Header("Authorization", "Bearer " + access_token)
+                response = request.Await()
+            end if
+
+            if response.statusCode() = 200
+                return response.json()
+
+            end if
+
+            return invalid
+
+        end function
+
+        function RefreshLEXDashboard(dbSfid as string) as boolean
+            access_token = RegistryUtils.Read(RegistryUtils.SFDC_ACCESS_TOKEN)
+            instance_url = RegistryUtils.Read(RegistryUtils.SFDC_INSTANCE_URL)
+
+            url = `${instance_url}${LEX_DASHBOARD_REFRESH_ENDPOINT}${dbSfid}`
+            request = HttpClient.Put(url, "").TryCount(1)
+            request.Header("Authorization", "Bearer " + access_token)
+            request.Header("Content-Type", "application/json")
+
+            LogInfo("Refreshing DB", url)
+            response = request.Await()
+
+            if response.statusCode() = 201
+                responseBody = response.json()
+
+                LogInfo("DB Status Url:", responseBody.statusUrl)
+                ' Poll the Status endpoint until we know everything is finished
+
+                while true
+                    statusUrl = `${instance_url}${responseBody.statusUrl}`
+                    request = HttpClient.Get(statusUrl).TryCount(1)
+                    request.Header("Authorization", "Bearer " + access_token)
+                    request.Header("Content-Type", "application/json")
+
+                    statusResponse = request.Await()
+
+                    if statusResponse.statusCode() = 200
+                        stillRunning = false
+                        ' Check if any components are still "RUNNING"
+                        for each componentStatus in statusResponse.json().componentStatus
+                            if componentStatus.refreshStatus = "RUNNING"
+                                stillRunning = true
+                                LogDebug("DB component still refreshing:", FormatJson(componentStatus))
+                            end if
+                        end for
+
+                        if stillRunning = false
+                            exit while
+                        end if
+
+                        sleep(3000) ' Wait for 3 seconds
+                    else
+                        LogDebug("Status check failed")
+                        exit while
+                    end if
+
+                end while
+
+
+                return true
+
+            else if response.statusCode() = 403
+                LogDebug("Attempt to refresh DB triggered an HTTP 403. This probably means the dashboard was recently refreshed.")
+                ' Error Code 403 typically means the dashboard has been refreshed too recently.
+                ' [{"errorCode":"FORBIDDEN","message":"You can't refresh this dashboard more than once in a minute."}]
+            end if
+
+            return false
+
+        end function
+
+
+        function LogOut()
+            m.RevokeRefreshToken() 'Explicitly revoke the refresh token
+
+            RegistryUtils.Delete(RegistryUtils.SFDC_ACCESS_TOKEN)
+            RegistryUtils.Delete(RegistryUtils.SFDC_REFRESH_TOKEN)
+            RegistryUtils.Delete(RegistryUtils.SFDC_INSTANCE_URL)
+            RegistryUtils.Delete(RegistryUtils.SFDC_DASHBOARD_ID)
+            RegistryUtils.Delete(RegistryUtils.SFDC_DASHBOARD_REFRESH_FREQUENCY)
+        end function
+
+    end class
+
+end namespace

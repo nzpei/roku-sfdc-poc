@@ -1,0 +1,36 @@
+{
+    "globals": [],
+    "ignores": [
+        "**/roku_modules/**/*",
+        "**/bslib.brs"
+    ],
+    "rules": {
+        // Code style
+        "inline-if-style": "never",
+        "block-if-style": "no-then",
+        "condition-style": "no-group",
+        "named-function-style": "no-sub",
+        "anon-function-style": "no-sub",
+        "aa-comma-style": "never",
+        "no-print": "warn",
+        "no-todo": "off",
+        "no-stop": "error",
+        "eol-last": "always",
+        // Strictness
+        "type-annotations": "all",
+        // Color
+        "color-format": "hash-hex",
+        "color-case": "upper",
+        "color-alpha": "always",
+        "color-alpha-defaults": "allowed",
+        "color-cert": "always",
+        // Code flow
+        "assign-all-paths": "error",
+        "unsafe-path-loop": "error",
+        "unsafe-iterators": "error",
+        "unreachable-code": "warn",
+        "case-sensitivity": "error",
+        "unused-variable": "error",
+        "consistent-return": "error"
+    }
+}

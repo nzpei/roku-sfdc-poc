@@ -1,0 +1,148 @@
+import "pkg:/source/utils/RegistryUtils.bs"
+import "pkg:/source/AsyncTask/AsyncTask.bs"
+import "pkg:/source/AsyncTask/Tasks.bs"
+import "pkg:/source/utils/FocusManagement.bs"
+import "pkg:/components/Dialog/DialogUtils.bs"
+
+function Init()
+    m.contentTask = AsyncTask.Start(Tasks.RetrieveDashboardImageTask, {
+        content: m.top
+    }, OnDashboardRetrieveComplete)
+
+    m.top.FindNode("dummyButton").ObserveField("buttonSelected", FuncName(ToggleLoadScale))
+end function
+
+function OnNodeReady() as void
+    m.refreshTimer = m.top.findNode("RefreshTimer")
+    m.refreshTimer.ObserveField("fire", FuncName(RefreshDashboard))
+
+    ' Populate initial timer values if saved in registry
+    initialDuration = RegistryUtils.Read(RegistryUtils.SFDC_DASHBOARD_REFRESH_FREQUENCY)
+    if initialDuration <> invalid
+        if initialDuration = "0"
+            return
+        else if initialDuration = "1"
+            m.refreshTimer.duration = 15 * 60
+        else if initialDuration = "2"
+            m.refreshTimer.duration = 30 * 60
+        else if initialDuration = "3"
+            m.refreshTimer.duration = 60 * 60
+        else if initialDuration = "4"
+            m.refreshTimer.duration = 8 * 60 * 60
+        else if initialDuration = "5"
+            m.refreshTimer.duration = 12 * 60 * 60
+        else if initialDuration = "6"
+            m.refreshTimer.duration = 24 * 60 * 60
+        else
+            return
+        end if
+        m.refreshTimer.control = "start"
+    end if
+
+end function
+
+function RefreshDashboard()
+    m.contentTask = AsyncTask.Start(Tasks.RetrieveDashboardImageTask, {
+        content: m.top
+    }, OnDashboardRetrieveComplete)
+
+end function
+
+function OnFocusChange() as void
+    if not m.top.focus
+        return
+    end if
+    NodeSetFocus(m.top.FindNode("dummyButton"), true)
+end function
+
+
+function OnDashboardRetrieveComplete(output as object) as void
+
+    if output.success and output.result.success
+        ' Callback means the dashboard has downloaded
+        m.dashboardPoster = m.top.findNode("SalesforceDashboard")
+        m.dashboardPoster.uri = output.result.fileLoc
+        m.dashboardPoster.ObserveField("loadStatus", FuncName(OnLoadStatusChanged))
+
+    else
+        ' For some reason, an ACCESS_TOKEN that has previously been used -
+        ' even if it's still active - will cause Pupparazzi to fail if toggling between
+        ' LEX and CRMA dashboards.
+        DialogUtils.ShowDialog(`Something went wrong. Did you enable "CRM Analytics for Slack" in Salesforce Setup? \n ${output.result.errorCode}`, "Error Loading Dashboard", true)
+    end if
+
+end function
+
+function OnLoadStatusChanged(input as object) as void
+
+    if m.dashboardPoster.loadStatus = "ready"
+        ' Hide Salesforce logo and loading text
+        m.top.findNode("SalesforceLogo").visible = false
+        m.top.findNode("MessageLabel").visible = false
+
+        ' Center the poster if scaleToFit was selected
+        if m.dashboardPoster.loadDisplayMode = "scaletofit"
+            m.dashboardPoster.translation = [(m.dashboardPoster.loadWidth - m.dashboardPoster.bitmapWidth) / 2, 0]
+        end if
+    else if m.dashboardPoster.loadStatus = "failed"
+        m.top.findNode("MessageLabel").text = "Dashboard failed to load. Please restart the app."
+    else
+        ' Must be in either "loading" or "none" state. Do nothing
+    end if
+
+end function
+
+function ToggleLoadScale()
+    ' Toggle display modes
+    tmpUri = m.dashboardPoster.uri
+    m.dashboardPoster.uri = ""
+    if m.dashboardPoster.loadDisplayMode = "scaletozoom"
+        m.dashboardPoster.loadDisplayMode = "scaleToFit"
+    else
+        m.dashboardPoster.loadDisplayMode = "scaleToZoom"
+        m.dashboardPoster.translation = [0, 0]
+    end if
+    m.dashboardPoster.uri = tmpUri
+end function
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press = false
+        return false
+    end if
+
+    if key = "OK"
+        ' As we have the dummyButton focused by default to work around the other key handling issues
+        ' we only get a press=false (i.e. OK button released) event here
+        ' Instead, we handle the button "click" to perform the desired action
+    end if
+
+    if key = "up"
+        if m.dashboardPoster.translation[1] < 0
+            m.dashboardPoster.translation = [0, m.dashboardPoster.translation[1] + 100]
+        end if
+    end if
+
+    if key = "down"
+        if m.dashboardPoster.translation[1] > -1 * (m.dashboardPoster.bitmapHeight - m.dashboardPoster.loadHeight)
+            m.dashboardPoster.translation = [0, m.dashboardPoster.translation[1] - 100]
+        end if
+    end if
+
+    if key = "back"
+        m.appController@.PopScreen()
+        sfDbSelectScreen = CreateObject("roSGNode", "SalesforceArtifactSelectionScreen")
+        m.appController@.PushScreen(sfDbSelectScreen)
+        sfDbSelectScreen@.BindNode()
+        return true
+    end if
+
+    if key = "options"
+        sfDbOptionsScreen = CreateObject("roSGNode", "DashboardRefreshOptionsOverlay")
+        sfDbOptionsScreen.dashboardTimer = m.top.findNode("RefreshTimer")
+        m.appController@.PushScreen(sfDbOptionsScreen)
+        sfDbOptionsScreen@.BindNode()
+    end if
+
+    return false
+end function
+

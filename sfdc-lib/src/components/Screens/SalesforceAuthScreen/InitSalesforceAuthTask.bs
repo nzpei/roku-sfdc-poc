@@ -1,0 +1,33 @@
+
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+
+@asynctask
+function InitSalesforceAuthTask(input as object) as object
+
+    sfdcService = new Salesforce.SalesforceService()
+
+    if sfdcService.IsLoggedIn()
+        input.content.authToken = "Logged in... Please wait..."
+    else
+        response = sfdcService.InitDeviceAuth(input.content.sfdc_env)
+
+        metadata = response.Json()
+
+        if not response.IsSuccess() or metadata = invalid
+            return {
+                success: false
+                error: response.ErrorMessage()
+            }
+        end if
+
+        input.content.url = metadata.verification_uri
+        input.content.userCode = metadata.user_code
+        input.content.deviceCode = metadata.device_code
+        input.content.pollInterval = metadata.interval
+
+    end if
+
+    return {
+        success: true
+    }
+end function

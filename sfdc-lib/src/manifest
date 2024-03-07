@@ -1,0 +1,16 @@
+# App Lib
+title=SfdcLib
+
+# Do not update version manually, it is auto updated from package.json
+major_version=0
+minor_version=0
+build_version=00001
+
+ui_resolutions=hd
+
+sg_component_libs_provided=SfdcLib
+hidden=1
+
+git_commit_sha=unknown
+
+bs_const=DEBUG=false

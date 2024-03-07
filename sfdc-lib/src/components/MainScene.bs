@@ -1,0 +1,20 @@
+import "pkg:/components/parts/AutoBind/AutoBind.part.bs"
+import "pkg:/components/parts/AutoBind/OnNodeReadyNoOp.bs"
+import "pkg:/source/utils/LoadingScreen.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+    m.scene = m.top.getScene()
+    ' At this point, the "MainScene" node is not yet added to the scene, and does not have a parent yet.
+    ' Let's wait until it has one.
+    m.MainSceneContainer = m.scene.findNode("MainSceneContainer")
+    m.MainSceneContainer.ObserveField("change", FuncName(MainSceneContainerChanged))
+end function
+
+function MainSceneContainerChanged()
+    AutoBindSceneGraph()
+    HideLoadingScreen()
+    m.scene.signalBeacon("AppLaunchComplete")
+end function
+
+

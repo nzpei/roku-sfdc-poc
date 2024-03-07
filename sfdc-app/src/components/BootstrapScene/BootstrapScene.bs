@@ -1,0 +1,113 @@
+import "LoadingMessages.bs"
+import "pkg:/source/Logger.bs"
+
+function Init() as void
+    m.scene = m.top.getScene()
+    m.top.backgroundColor = "#242424FF"
+    m.top.backgroundURI = ""
+
+    m.loadingIndicator = m.top.findNode("LoadingIndicator")
+    m.global.addFields({
+        loadingIndicator: m.loadingIndicator
+    })
+
+    m.loadingIndicator.visible = true
+
+    m.sfdcLibUrls = GetSfdcLibUrls()
+    m.sfdcLibUrlIndex = 0
+
+    LoadSfdcLib()
+end function
+
+function GetSfdcLibUrls() as object
+    #if DEBUG
+        debug = { type: "debug", link: Manifest.ReadValue("sfdc_lib_debug_url") }
+        embedded = { type: "embedded", link: Manifest.ReadValue("sfdc_lib_embedded_url") }
+        return [debug, embedded]
+    #else
+        savedUrls = Registry.GetSfdcLibUrlsFromRegistry()
+        if savedUrls <> invalid
+            m.shouldClearRegistryOnLoadFail = true
+            return savedUrls
+        end if
+
+        github = { type: "github", link: Manifest.ReadValue("sfdc_lib_remote_url") }
+        embedded = { type: "embedded", link: Manifest.ReadValue("sfdc_lib_embedded_url") }
+        return [github, embedded]
+    #end if
+end function
+
+function LoadSfdcLib() as void
+    if m.sfdcLibUrlIndex >= m.sfdcLibUrls.Count()
+        m.loadingIndicator.visible = false
+        if m.shouldClearRegistryOnLoadFail = true
+            Registry.DeleteKey("sfdc_lib_urls", "Sfdc")
+        end if
+        ShowSfdcLibLoadErrorDialog()
+        return
+    end if
+
+    RemoveComponentLibrary()
+    uri = m.sfdcLibUrls[m.sfdcLibUrlIndex].link
+    LoadComponentLibrary(uri)
+end function
+
+function OnLoadStatusChanged() as void
+    libUrl = m.sfdcLibUrls[m.sfdcLibUrlIndex]
+    if m.lib.loadStatus = "ready"
+        RemoveComponentLibrary()
+        Logger.Log(`Sfdc lib loaded from ${libUrl.link} in ${m.timer.TotalMilliseconds()} ms`)
+        m.timer = invalid
+        m.scene.sfdcLibLoadedUrl = libUrl
+        container = m.scene.findNode("MainSceneContainer")
+        container.createChild("SfdcLib:MainScene")
+        return
+    end if
+
+    if m.lib.loadStatus = "failed"
+        Logger.Log(`Sfdc lib failed to load from ${libUrl.link}`)
+        ' Try next url
+        m.sfdcLibUrlIndex += 1
+        LoadSfdcLib()
+    end if
+end function
+
+function RemoveComponentLibrary() as void
+    if m.lib = invalid
+        return
+    end if
+
+    m.lib.unobserveField("loadStatus")
+    m.scene.removeChild(m.lib)
+    m.lib = invalid
+end function
+
+function LoadComponentLibrary(uri as string)
+    m.timer = CreateObject("roTimespan")
+    m.timer.mark()
+
+    m.lib = m.scene.createChild("ComponentLibrary")
+    ' bs:disable-next-line NO_OBSERVE_STRING_CALLBACK
+    m.lib.observeField("loadStatus", "OnLoadStatusChanged")
+
+    Logger.Log(`Loading Sfdc lib from ${uri}`)
+    m.lib.uri = uri
+end function
+
+function ShowSfdcLibLoadErrorDialog()
+    message = [
+        "Could not load Sfdc component library from any of the following urls:",
+    ]
+
+    bulletText = []
+    for each url in m.sfdcLibUrls
+        bulletText.push("[" + url.type + "] " + url.link)
+    end for
+
+    bottomText = [
+        "Please restart this app.",
+        "If the problem persist, contact the authors."
+    ]
+
+    DialogShowError(message, bulletText, bottomText)
+end function

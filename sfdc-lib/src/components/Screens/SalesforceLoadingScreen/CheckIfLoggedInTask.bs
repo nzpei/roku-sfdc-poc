@@ -1,0 +1,18 @@
+
+import "pkg:/components/Services/Salesforce/SalesforceService.bs"
+
+@asynctask
+function CheckIfLoggedInTask(input as object) as object
+
+    sfdcService = new Salesforce.SalesforceService()
+
+    if sfdcService.IsLoggedIn()
+        return {
+            success: true
+        }
+    end if
+
+    return {
+        success: false
+    }
+end function

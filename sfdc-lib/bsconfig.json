@@ -1,0 +1,6 @@
+{
+  "extends": "../config/bsconfig.base.jsonc",
+  "rootDir": "src/",
+  "stagingDir": "../build/sfdc-lib",
+  "outFile": "../dist/sfdc-lib.zip"
+}

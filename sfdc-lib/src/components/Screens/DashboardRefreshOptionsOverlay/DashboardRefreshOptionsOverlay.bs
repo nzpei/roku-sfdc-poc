@@ -1,0 +1,59 @@
+import "pkg:/source/utils/RegistryUtils.bs"
+
+function Init()
+    initialDuration = RegistryUtils.Read(RegistryUtils.SFDC_DASHBOARD_REFRESH_FREQUENCY)
+    if initialDuration <> invalid
+        m.top.FindNode("refreshRadioButtonList").checkedItem = initialDuration
+    end if
+
+end function
+
+function OnNodeReady()
+
+end function
+
+
+function OnKeyEvent(key as string, press as boolean) as boolean
+    if press = false
+        return false
+    end if
+
+    if key = "back"
+        UpdateTimerSettings()
+
+        m.appController@.PopScreen()
+        return true
+    end if
+    return false
+end function
+
+function UpdateTimerSettings() as void
+
+    selectedOption = m.top.FindNode("refreshRadioButtonList").checkedItem.ToStr()
+    dashboardTimer = m.top.dashboardTimer
+
+    RegistryUtils.Write(RegistryUtils.SFDC_DASHBOARD_REFRESH_FREQUENCY, selectedOption)
+    dashboardTimer.control = "stop"
+
+    if selectedOption = "0"
+        return
+    else if selectedOption = "1"
+        dashboardTimer.duration = 15 * 60
+    else if selectedOption = "2"
+        dashboardTimer.duration = 30 * 60
+    else if selectedOption = "3"
+        dashboardTimer.duration = 60 * 60
+    else if selectedOption = "4"
+        dashboardTimer.duration = 8 * 60 * 60
+    else if selectedOption = "5"
+        dashboardTimer.duration = 12 * 60 * 60
+    else if selectedOption = "6"
+        dashboardTimer.duration = 24 * 60 * 60
+    else
+        return
+    end if
+
+    dashboardTimer.control = "start"
+    return
+
+end function

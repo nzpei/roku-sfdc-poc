@@ -1,0 +1,84 @@
+{
+    "autoImportComponentScript": true,
+    "createPackage": false,
+    "diagnosticFilters": [
+        {
+            "src": "components/**/*.part.xml",
+            "codes": [
+                // 1067 - Cannot find function with name '${name}' in component scope
+                // This is to prevent errors where the onChange function is not found in the component scope
+                1067
+            ]
+        }
+    ],
+    "diagnosticLevel": "error",
+    // The validation regex rules are validated using the validation-plugin.ts plugin
+    "validation": [
+        {
+            "code": "NO_SET_FOCUS",
+            "regex": "\\.SetFocus\\(.+\\)",
+            "regexFlags": "ig",
+            "message": "SetFocus() is not allowed. Use NodeSetFocus() instead."
+        },
+        {
+            "code": "NO_OBSERVE_STRING_CALLBACK",
+            "regex": "\\.observeField(scoped)?\\s*\\(\\s*\"\\w+\"\\s*,\\s*\"\\w+\"\\s*\\)",
+            "regexFlags": "ig",
+            "message": "observeField(\"field\", \"callback\") is not allowed. Use observeField(\"field\", FuncName(callback)) instead."
+        },
+        {
+            "code": "NO_INVALID_CALLFUNC_ARG",
+            "regex": "@\\.\\w+\\(invalid\\)",
+            "regexFlags": "ig",
+            "message": "the arg invalid in @.func(invalid) is not needed. Just use @.func() instead."
+        },
+        {
+            // Tagging unused variables (Available since Roku OS 11.0) – Variables can explicitly 
+            // be marked as unused by prepending an underscore to the value (for example, sub myTask(_x)).
+            // https://developer.roku.com/en-ca/docs/references/brightscript/language/expressions-variables-types.md#types
+            "code": "UNUSED_ARG_STARTS_WITH_UNDERSCORE",
+            "regex": "\\b(?!_unused)unused\\b",
+            "regexFlags": "ig",
+            "message": "unused args should start with _ (e.g. _unused)"
+        }
+    ],
+    "files": [
+        "source/**",
+        "components/**",
+        "!components/**/*.part.xml",
+        "images/**",
+        "!**/*.psd",
+        "!**/*.svg",
+        "!**/*.svg.meta.json5",
+        "config/**",
+        "lib/**",
+        "www/**",
+        "manifest",
+        "!**/*.transpiled/**",
+        "!**/*.transpiled.*",
+        "!**/*.spec.bs",
+        "!**/tests/**"
+    ],
+    "lintConfig": "./config/bslint.jsonc",
+    "plugins": [
+        "@rokucommunity/bslint",
+        "../tools/bs-plugins/asynctask-plugin.ts",
+        "../tools/bs-plugins/manifest-edit-plugin.ts",
+        "../tools/bs-plugins/component-includes-plugin.ts",
+        "../tools/bs-plugins/bindings-plugin.ts",
+        "../tools/bs-plugins/oninit-plugin.ts",
+        "../tools/bs-plugins/track-transpiled-plugin.ts",
+        "../tools/bs-plugins/json-yaml-plugin.ts",
+        "../tools/bs-plugins/validation-plugin.ts",
+        "../tools/bs-plugins/logger-plugin.ts",
+        "../tools/bs-plugins/image-gen-plugin.ts",
+        "../tools/bs-plugins/type-gen-plugin.ts",
+        "../tools/bs-plugins/web-server-plugin.ts"
+    ],
+    "retainStagingDir": true,
+    "require": [
+        "ts-node/register"
+    ],
+    "sourceMap": true,
+    "pruneEmptyCodeFiles": true
+}

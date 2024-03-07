@@ -1,0 +1,94 @@
+<component name="SalesforceArtifactSelectionScreen" extends="Group" includes="AutoBind,Focus">
+    <interface>
+        <field id="content" type="node" onChange="OnContentSet" />
+        <field id="appController" type="node" bind="/AppController" />
+
+    </interface>
+    <children>
+        <Rectangle
+            width="1920"
+            height="1080"
+            color="0x242424">
+        </Rectangle>
+        <LayoutGroup
+            itemSpacings="[5,5,20]"
+            translation="[65,120]">
+            <Label
+                id="titleLabel"
+                width="500"
+                maxLines="2"
+                wrap="true"
+                text="Dashboards">
+                <Font role="font" uri="font:BoldSystemFontFile" size="36" />
+            </Label>
+            <Label
+                id="subtitleLabel"
+                width="500"
+                text="Select a dashboard to display"
+                font="font:SmallestBoldSystemFont" />
+            <Label
+                id="updatedLabel"
+                width="500"
+                font="font:SmallestSystemFont" />
+            <Label
+                id="descriptionLabel"
+                width="500"
+                maxLines="10"
+                wrap="true"
+                text="Only the most recently viewed Dashboards are displayed in this list."
+                font="font:SmallestSystemFont" />
+
+            <CheckList id="includeCheckList" checkedState="[true, true]">
+                <ContentNode role="content">
+                    <ContentNode title="Lightning Dashboards" />
+                    <ContentNode title="CRMA Dashboards" />
+                </ContentNode>
+            </CheckList>
+
+        </LayoutGroup>
+
+        <MarkupGrid
+            id="list"
+            itemComponentName="SalesforceArtifactViewCell"
+            itemSize="[650,120]"
+            itemSpacing="[0,20]"
+            numColumns="1"
+            numRows="6"
+            vertFocusAnimationStyle="floatingFocus"
+            translation="[620,120]" />
+        <Rectangle
+            width="560"
+            height="800"
+            translation="[1300,110]"
+            color="0x404040">
+            <LayoutGroup
+                itemSpacings="[5,10,20]"
+                translation="[20,20]">
+                <Label
+                    id="selectedDashboardTitleLabel"
+                    width="500"
+                    maxLines="2"
+                    wrap="true"
+                >
+                    <Font role="font" uri="font:BoldSystemFontFile" size="36" />
+                </Label>
+                <Label
+                    id="selectedDashboardCreatedByLabel"
+                    width="500"
+                    font="font:SmallestSystemFont" />
+                <Label
+                    id="selectedDashboardLastModifiedDateLabel"
+                    width="500"
+                    font="font:SmallestSystemFont" />
+                <Label
+                    id="selectedDashboardDescriptionLabel"
+                    width="500"
+                    maxLines="10"
+                    wrap="true"
+                    font="font:SmallestSystemFont" />
+            </LayoutGroup>
+
+        </Rectangle>
+
+    </children>
+</component>

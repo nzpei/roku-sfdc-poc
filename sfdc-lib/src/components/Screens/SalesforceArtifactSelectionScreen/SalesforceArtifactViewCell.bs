@@ -1,0 +1,24 @@
+import "pkg:/source/utils/TimeUtils.bs"
+import "pkg:/source/utils/Types.bs"
+
+function Init()
+
+end function
+
+function OnContentSet() as void
+    content = m.top.itemContent
+
+    if content = invalid
+        return
+    end if
+
+    m.top.title = content.title
+    m.top.folder = "/" + content.folder
+
+    if content.type = "lightning-dashboard"
+        m.top.icon = "pkg:/images/dashboard_component_120.png"
+    else
+        m.top.icon = "pkg:/images/dashboard_ea_120.png"
+    end if
+
+end function
